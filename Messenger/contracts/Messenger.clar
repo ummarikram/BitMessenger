@@ -21,7 +21,7 @@
 )
 
 
-(define-public (get-sent-messages (sender (string-ascii 10)) (reciever (string-ascii 10)))
+(define-public (get-messages (sender (string-ascii 10)) (reciever (string-ascii 10)))
     (let 
 
         (
@@ -36,17 +36,3 @@
     )
 )
 
-
-(define-public (get-recieved-messages (sender (string-ascii 10)) (reciever (string-ascii 10)))
-    (let 
-    
-        (
-            (messages (get message (unwrap! (map-get? Messages-map { usernames: { sender: sender, reciever: reciever } }) (err (var-get default)))))
-        )
-        
-        ;; (print messages)
-        
-        ;; return list of messages between the two users where the calling user recieved the message. 
-        (ok messages)
-    )
-)
