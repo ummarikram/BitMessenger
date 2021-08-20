@@ -111,7 +111,7 @@
         
         ;; (print friends)
         
-        ;; return list of messages between the two users where the calling user sent the message.
+    
         (ok friends)
     )
 )
@@ -125,7 +125,7 @@
         
         ;; (print pending-friend-requests)
         
-        ;; return list of messages between the two users where the calling user sent the message.
+   
         (ok pending-friend-requests)
     )
 )
