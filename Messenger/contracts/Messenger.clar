@@ -23,6 +23,7 @@
 (define-data-var NUMBER_LRU_TO_REMOVE uint u50)
 (define-data-var removed-message-index uint u0)
 (define-data-var accepted-pending-request-user (string-ascii 20) "")
+(define-data-var remove-friend-user (string-ascii 20) "")
 
 ;; ----------------------------------------Public Functions-------------------------------------
 
@@ -42,7 +43,7 @@
         (if (< (len messages) u500)
         (ok (map-set messages-map { usernames: { sender: sender, reciever: reciever } } { content: {message:  (unwrap-panic (as-max-len? (append messages text) u500)), time: time } } ))
         (ok (map-set messages-map { usernames: { sender: sender, reciever: reciever } } { content: {message:  (unwrap-panic (as-max-len? (append (filter remove-least-recent-messages messages) text) u500)), time: time } } ))
-)
+        )
     )
 )
 
@@ -90,6 +91,33 @@
     )
 )
 
+(define-public (remove-friend (user1 (string-ascii 20)) (user2 (string-ascii 20)))
+   (let
+        (
+            (user1-friends (default-to (var-get default-friends) ( get friends (map-get? friends-map { username: user1 }))))
+            (user2-friends (default-to (var-get default-friends) ( get friends (map-get? friends-map { username: user2 }))))
+        )
+        
+        ;; remove user1 from user 2 friend list
+        (var-set remove-friend-user user1)
+        (map-set friends-map { username: user2 } {friends: (unwrap-panic (as-max-len? (filter remove-user-from-friend-list user2-friends) u500))})
+        
+        ;; remove user2 from user 1 friend list
+        (var-set remove-friend-user user2)
+        (map-set friends-map { username: user1 } {friends: (unwrap-panic (as-max-len? (filter remove-user-from-friend-list user1-friends) u500))})
+        
+        ;; remove friend request status of both users
+        (map-delete request-status-map { usernames: { sender: user1, reciever: user2 } })
+        (map-delete request-status-map { usernames: { sender: user2, reciever: user1 } })
+
+        ;; remove messages of both users
+        (map-delete messages-map { usernames: { sender: user1, reciever: user2 } })
+        (map-delete messages-map { usernames: { sender: user2, reciever: user1 } })
+
+        (ok true)
+    )
+)
+
 ;; ----------------------------------------Private Functions-------------------------------------
 
 (define-private (are-friends (sender (string-ascii 20)) (reciever (string-ascii 20)))
@@ -109,6 +137,10 @@
 
 (define-private (remove-pending-request (user (string-ascii 20)))
     (not (is-eq (var-get accepted-pending-request-user) user))
+)
+
+(define-private (remove-user-from-friend-list (user (string-ascii 20)))
+    (not (is-eq (var-get remove-friend-user) user))
 )
 
 
