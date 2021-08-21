@@ -1,2 +1,2 @@
 # Messenger
-Smart contract for storing messages between two users
+Smart contract for a basic decentralized messenger app
