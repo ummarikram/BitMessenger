@@ -1,8 +1,11 @@
 ;; Composite key Approach for storing messages between two users
-(define-map messages-map { usernames: { sender: (string-ascii 20), reciever: (string-ascii 20) } } { content: {message:  (list 500 (string-ascii 100)), time: (string-ascii 20) } })
+(define-map messages-map { sender: (string-ascii 20), reciever: (string-ascii 20) } {message:  (list 500 (string-ascii 100)), time: (string-ascii 20) })
 
 ;; For Storing Username of each account
 (define-map usernames-map { wallet-address: principal  } { username: (string-ascii 20) } )
+
+;; For Storing address of each username 
+(define-map address-map { username: (string-ascii 20) } { wallet-address: principal  } )
 
 ;; For Storing Friends List of each user
 (define-map friends-map { username: (string-ascii 20) } { friends: (list 500 (string-ascii 20)) } )
@@ -11,7 +14,7 @@
 (define-map requests-map { username: (string-ascii 20) } { requests: (list 500 (string-ascii 20)) } )
 
 ;; For Storing Friend request Status
-(define-map request-status-map { usernames: { sender: (string-ascii 20), reciever: (string-ascii 20) } } { accepted: bool } )
+(define-map request-status-map { sender: (string-ascii 20), reciever: (string-ascii 20) } { accepted: bool } )
 
 ;; Default message for first-time
 (define-data-var default-message (list 500 (string-ascii 100)) (list ""))
@@ -31,24 +34,34 @@
     (let 
         (
             ;; if sending message for the first time then default to first-message else get list of previously sent messages
-            (messages (default-to (var-get default-message) ( get message (get content (map-get? messages-map { usernames: { sender: sender, reciever: reciever } })))))
+            (messages (default-to (var-get default-message) ( get message (map-get? messages-map { sender: sender, reciever: reciever }))))
+        )
+
+        ;; if both users are not friends then return err false else send message
+        (asserts!
+        (or
+            (is-eq (are-friends sender reciever) (some true))
+            (is-eq (are-friends reciever sender) (some true))
+        )
+        (err false)
         )
         
         ;; (print messages)
         (var-set removed-message-index u0)
 
-       
-        
         ;; check if list is not full
         (if (< (len messages) u500)
-        (ok (map-set messages-map { usernames: { sender: sender, reciever: reciever } } { content: {message:  (unwrap-panic (as-max-len? (append messages text) u500)), time: time } } ))
-        (ok (map-set messages-map { usernames: { sender: sender, reciever: reciever } } { content: {message:  (unwrap-panic (as-max-len? (append (filter remove-least-recent-messages messages) text) u500)), time: time } } ))
+        (ok (map-set messages-map { sender: sender, reciever: reciever }  {message:  (unwrap-panic (as-max-len? (append messages text) u500)), time: time } ))
+        (ok (map-set messages-map { sender: sender, reciever: reciever }  {message:  (unwrap-panic (as-max-len? (append (filter remove-least-recent-messages messages) text) u500)), time: time } ))
         )
     )
 )
 
 (define-public (add-new-username (wallet-address principal) (username (string-ascii 20) ) )
+   (begin
+    (map-insert address-map { username: username} { wallet-address: wallet-address  } ) 
     (ok (map-insert usernames-map {wallet-address: wallet-address} { username: username } ))
+   )
 )
 
 (define-public (send-friend-request (sender (string-ascii 20)) (reciever (string-ascii 20)))
@@ -60,14 +73,16 @@
 
         ;; if both users are friends then return err false else send request
         (asserts!
+        (not
         (or
         (is-eq (are-friends sender reciever) (some true))
         (is-eq (are-friends reciever sender) (some true))
         ) 
+        )
         (err false)
         )
         (map-set requests-map { username: reciever } {requests: (unwrap-panic (as-max-len? (append pending-requests sender) u500))})
-        (ok (map-insert request-status-map { usernames: { sender: sender, reciever: reciever } } { accepted: false }))
+        (ok (map-insert request-status-map { sender: sender, reciever: reciever } { accepted: false }))
     )
 )
 
@@ -84,7 +99,7 @@
         (var-set accepted-pending-request-user sender)
         (map-set requests-map { username: reciever } {requests: (unwrap-panic (as-max-len? (filter remove-pending-request pending-requests) u500))})
         
-        (map-set request-status-map { usernames: { sender: sender, reciever: reciever } } { accepted: true })
+        (map-set request-status-map { sender: sender, reciever: reciever } { accepted: true })
         (map-set friends-map { username: sender } {friends: (unwrap-panic (as-max-len? (append sender-friends reciever) u500))})
         (map-set friends-map { username: reciever } {friends: (unwrap-panic (as-max-len? (append reciever-friends sender) u500))})
         (ok true)
@@ -107,12 +122,12 @@
         (map-set friends-map { username: user1 } {friends: (unwrap-panic (as-max-len? (filter remove-user-from-friend-list user1-friends) u500))})
         
         ;; remove friend request status of both users
-        (map-delete request-status-map { usernames: { sender: user1, reciever: user2 } })
-        (map-delete request-status-map { usernames: { sender: user2, reciever: user1 } })
+        (map-delete request-status-map { sender: user1, reciever: user2 })
+        (map-delete request-status-map { sender: user2, reciever: user1 })
 
         ;; remove messages of both users
-        (map-delete messages-map { usernames: { sender: user1, reciever: user2 } })
-        (map-delete messages-map { usernames: { sender: user2, reciever: user1 } })
+        (map-delete messages-map { sender: user1, reciever: user2  })
+        (map-delete messages-map { sender: user2, reciever: user1  })
 
         (ok true)
     )
@@ -121,11 +136,11 @@
 ;; ----------------------------------------Private Functions-------------------------------------
 
 (define-private (are-friends (sender (string-ascii 20)) (reciever (string-ascii 20)))
-    (get accepted (map-get? request-status-map { usernames: { sender: sender, reciever: reciever } }))
+    (get accepted (map-get? request-status-map { sender: sender, reciever: reciever }))
 )
 
-(define-private (get-username (wallet-address principal))
-    (get username (map-get? usernames-map {wallet-address: wallet-address} ))
+(define-private (get-address (username (string-ascii 20)))
+    (get wallet-address (map-get? address-map {username: username} ))
 )
 
 (define-private (remove-least-recent-messages (message (string-ascii 100)))
@@ -150,7 +165,7 @@
     (let 
 
         (
-            (messages (get message (get content (unwrap! (map-get? messages-map { usernames: { sender: sender, reciever: reciever } }) (err (var-get default-message))))))
+            (messages (get message (unwrap! (map-get? messages-map { sender: sender, reciever: reciever }) (err (var-get default-message)))))
         )
         
         ;; (print messages)
@@ -191,6 +206,10 @@
         ;; return list of messages between the two users where the calling user sent the message.
         (ok pending-friend-requests)
     )
+)
+
+(define-read-only (get-username (wallet-address principal))
+    (get username (map-get? usernames-map {wallet-address: wallet-address} ))
 )
 
 
