@@ -14,3 +14,16 @@ BitMessenger is a decentralized messenger app built on the stacks ecosystem. It 
 * Navigate to: https://localhost:3000
 
 ## SCREENSHOTS
+
+### HOME
+![Image of Home](https://github.com/ummarikram/BitMessenger/blob/main/Screenshots/Home.png)
+
+### REQUEST SECTION
+![Image of Home](https://github.com/ummarikram/BitMessenger/blob/main/Screenshots/FriendRequests.png)
+
+### ADD FRIEND
+![Image of Home](https://github.com/ummarikram/BitMessenger/blob/main/Screenshots/AddFriend.png)
+
+### FRIEND LIST
+![Image of Home](https://github.com/ummarikram/BitMessenger/blob/main/Screenshots/Convo.png)
+
