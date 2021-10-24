@@ -83,7 +83,7 @@
         (err false)
         )
         (map-set requests-map { username: reciever } {requests: (unwrap-panic (as-max-len? (append pending-requests sender) u100))})
-        (ok (map-insert request-status-map { sender: sender, reciever: reciever } { accepted: false }))
+        (ok (map-set request-status-map { sender: sender, reciever: reciever } { accepted: false }))
     )
 )
 
@@ -103,6 +103,22 @@
         (map-set request-status-map { sender: sender, reciever: reciever } { accepted: true })
         (map-set friends-map { username: sender } {friends: (unwrap-panic (as-max-len? (append sender-friends reciever) u100))})
         (map-set friends-map { username: reciever } {friends: (unwrap-panic (as-max-len? (append reciever-friends sender) u100))})
+        (ok true)
+    )
+)
+
+(define-public (reject-friend-request (sender (string-ascii 20)) (reciever (string-ascii 20)))
+    (let
+        (
+            ;; get pending requests list 
+            (pending-requests (default-to (var-get default-friends) ( get requests (map-get? requests-map { username: reciever }))))
+        )
+        
+        ;; remove user from pending request list
+        (var-set accepted-pending-request-user sender)
+        (map-set requests-map { username: reciever } {requests: (unwrap-panic (as-max-len? (filter remove-pending-request pending-requests) u100))})
+        
+        (map-set request-status-map { sender: sender, reciever: reciever } { accepted: false })
         (ok true)
     )
 )
