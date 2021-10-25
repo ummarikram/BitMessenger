@@ -10,7 +10,7 @@ Clarinet.test({
             Tx.contractCall('Messenger', 'get-messages', [types.ascii("ummar"), types.ascii("ahmed")], wallet_1.address),
             Tx.contractCall('Messenger', 'send-message', [types.ascii("ummar"), types.ascii("ahmed"), types.ascii("Hello Ahmed")], wallet_1.address),
             Tx.contractCall('Messenger', 'send-friend-request', [types.ascii("ummar"), types.ascii("ahmed")], wallet_1.address),
-            Tx.contractCall('Messenger', 'get-frends-list', [types.ascii("ummar")], wallet_1.address),
+            Tx.contractCall('Messenger', 'get-friends-list', [types.ascii("ummar")], wallet_1.address),
             Tx.contractCall('Messenger', 'get-friends-list', [types.ascii("ahmed")], wallet_1.address),
             Tx.contractCall('Messenger', 'get-pending-friend-requests', [types.ascii("ahmed")], wallet_1.address),
             Tx.contractCall('Messenger', 'accept-friend-request', [types.ascii("ummar"), types.ascii("ahmed")], wallet_1.address),
